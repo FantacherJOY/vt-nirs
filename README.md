@@ -2,14 +2,11 @@
 
 This repository contains the code for **VT-NIRS**, a causal deep learning framework for estimating individualized treatment effects (ITE) of non-invasive respiratory support (NIRS) versus invasive mechanical ventilation (IMV) in patients with acute respiratory failure. The primary outcome is ventilator-free days at 28 days (VFD-28).
 
-**Paper:** *VT-NIRS: A Virtual Twin Framework for Individualized Treatment Effect Estimation of Non-Invasive Respiratory Support in Acute Respiratory Failure*
-Published in Proceedings of Machine Learning Research (PMLR), Machine Learning for Healthcare (MLHC), 2026.
-
 ## Framework Overview
 
 VT-NIRS consists of three stages:
 
-1. **Survival-Aware Encoder** — A 4-layer Transformer encoder with an attention gate that decomposes learned representations into mortality (z_surv) and ventilation (z_vfd) components.
+1. **Survival-Aware Encoder** — A 4-layer Transformer encoder with an attention gate that separates learned representations into mortality (z_surv) and ventilation (z_vfd) components.
 2. **Adversarial Pretraining** — A counterfactual generator produces potential outcomes under both treatment arms, trained adversarially against a discriminator (adapted from GANITE, Yoon et al. 2018).
 3. **ITE Estimation** — A doubly-robust pseudo-outcome module (Kennedy, 2023) supervises a direct ITE prediction head, with MMD and propensity-based representation balancing (Shalit et al., 2017; Shi et al., 2019).
 
@@ -96,17 +93,6 @@ Open `VT_NIRS_Run_final.ipynb` and run cells sequentially. The notebook executes
 6. **Ablation Study** — Gate removal ablation
 7. **External Validation** — eICU-CRD cohort extraction and zero-shot transfer evaluation
 
-## Citation
-
-```bibtex
-@inproceedings{vtnirs2026,
-  title={VT-NIRS: A Virtual Twin Framework for Individualized Treatment Effect Estimation of Non-Invasive Respiratory Support in Acute Respiratory Failure},
-  author={},
-  booktitle={Proceedings of Machine Learning for Healthcare (MLHC)},
-  year={2026},
-  publisher={PMLR}
-}
-```
 
 ## License
 
