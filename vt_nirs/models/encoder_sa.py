@@ -1,48 +1,4 @@
-"""
-encoder_sa.py — Survival-Aware Transformer Encoder (NOVEL MODIFICATION)
-========================================================================
-Extends the base TemporalTransformerEncoder with a survival-aware attention
-gate that modulates how the encoder attends to temporal patterns based on
-a learned censoring signal.
 
-This file is the NOVEL contribution (analogous to graphspa/training/layer_dev.py
-which adds Dynamic Adjacency Enhancement to the base layer.py).
-
-Motivation:
-  In VFD-28, patients who die before day 28 receive VFD=0 regardless of their
-  ventilation trajectory. This creates two distinct patient subpopulations with
-  fundamentally different outcome-generating processes:
-    (a) Survivors: VFD-28 driven by ventilation duration
-    (b) Non-survivors: VFD-28 = 0, driven by mortality risk
-
-  A standard encoder treats both identically, but the temporal signals that
-  predict ventilation duration differ from those predicting mortality. The
-  survival-aware gate learns to route attention appropriately.
-
-  # Ref: Fine JP, Gray RJ. "A Proportional Hazards Model for the
-  #      Subdistribution of a Competing Risk." JASA 1999.
-  #      — Establishes competing risks framework: death competes with
-  #        ventilation liberation as events. Lines 1-3 of Introduction.
-
-  # Ref: Analogous to graphspa layer_dev.py which adds attention_weights
-  #      parameter to modulate static adjacency. Here we add survival_gate
-  #      to modulate temporal attention.
-
-Novel component — SurvivalAttentionGate:
-  - Learns a gating vector g ∈ [0,1]^d_model from the encoder output
-  - g modulates which representation dimensions are used for the survival
-    prediction head vs the conditional VFD head
-  - The gate is trained end-to-end through the adversarial loss
-  - This is a single nn.Sequential + Sigmoid — minimal and surgical,
-    just like graphspa adds a single attention_weights parameter.
-
-Design reference:
-  # Ref: graphspa layer_dev.py lines 25-26: adds self.attention_weights
-  #      as a single learnable parameter to the base embedding class.
-  #      We follow the same pattern: single gating module added to base encoder.
-  # Ref: mcem attr/models/mcextremal_mask.py lines 138-143: adds F.dropout
-  #      on the mask for uncertainty. Similarly minimal modification.
-"""
 
 import torch
 import torch.nn as nn
