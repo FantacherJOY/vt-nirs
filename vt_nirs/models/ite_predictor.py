@@ -1,35 +1,3 @@
-"""
-ite_predictor.py — Two-Headed ITE Predictor (Inference Module)
-===============================================================
-Predicts individualized treatment effects at inference time,
-without requiring noise input (unlike the Generator).
-
-Base: GANITE ITEPredictor (Yoon et al. ICML 2018, Section 3.3)
-  # Ref: Yoon et al. ICML 2018, Section 3.3 "ITE Estimation"
-  #      — separate supervised network trained on Generator's outputs
-  #      to predict ITE without noise at inference time.
-  # Ref: DT_ITE_Final.ipynb class ITEPredictor (line 2741)
-  #      Input: embedding(128) → Linear(128,64) → ReLU → Linear(64,2) → Sigmoid
-
-Modification: Same two-headed structure as Generator for consistency:
-  - Survival head → P(survive | treatment=t) for t ∈ {0,1}
-  - VFD head → E[VFD-28 | survived, treatment=t] for t ∈ {0,1}
-  - ITE computed as: VFD(1) - VFD(0)  [NIRS effect relative to IMV]
-
-[v7 UPDATE] Added unconstrained direct ITE head supervised by DR-IPCW
-pseudo-outcomes. The decomposed heads (survival × conditional VFD) compress
-ITE via multiplicative coupling when both arms have similar survival probs.
-The direct head bypasses this by learning tau(x) directly from the embedding,
-supervised by doubly-robust pseudo-outcomes (Kennedy, Ann Stat 2023).
-  # Ref: Nie & Wager. "Quasi-oracle estimation of heterogeneous treatment
-  #      effects." Biometrika 2021. Section 2: R-learner directly targets
-  #      the CATE function tau(x) rather than individual potential outcomes.
-  # Ref: Kennedy. "Towards optimal doubly robust estimation of heterogeneous
-  #      causal effects." Ann Stat 2023. Theorem 1: DR pseudo-outcome
-  #      provides sqrt(n)-consistent CATE estimation.
-  # Ref: Foster & Syrgkanis. "Orthogonal statistical learning." Ann Stat
-  #      2023. Section 3: direct CATE estimation via orthogonal loss.
-"""
 
 import torch
 import torch.nn as nn
