@@ -5,24 +5,6 @@ import torch.nn as nn
 
 
 class CounterfactualGenerator(nn.Module):
-    """
-    Two-headed counterfactual generator for VFD-28 with survival decomposition.
-
-    Follows GANITE's generator structure (embedding + treatment + noise → outcomes)
-    but outputs a survival probability and conditional VFD for each treatment arm.
-
-    # Ref: Yoon et al. ICML 2018, Section 3.1 — Generator takes
-    #      (x, t, z) as input and produces counterfactual G(x,t,z).
-    # Ref: DT_ITE_Final.ipynb line 2699-2719 — our existing GANITE generator
-    #      uses nn.Sequential with Linear→ReLU→Dropout→Linear→Sigmoid.
-    #      We extend this pattern with two output heads.
-
-    Args:
-        emb_dim: Patient embedding dimension (from encoder)
-        noise_dim: Random noise dimension (default: 8, matching AMIA code)
-        hidden_dim: Generator hidden layer size (default: 128)
-        dropout: Dropout rate (default: 0.2)
-    """
 
     def __init__(self, emb_dim=128, noise_dim=8, hidden_dim=128, dropout=0.2):
         super().__init__()
@@ -55,19 +37,7 @@ class CounterfactualGenerator(nn.Module):
         )
 
     def forward(self, emb, treatment, noise):
-        """
-        Generate counterfactual outcomes for a given treatment.
 
-        Args:
-            emb: (batch, emb_dim) — patient embedding (can be full, survival, or VFD)
-            treatment: (batch, 1) — treatment indicator (0=IMV, 1=NIRS)
-            noise: (batch, noise_dim) — random noise for stochasticity
-
-        Returns:
-            p_survive: (batch, 1) — P(survive to day 28 | treatment)
-            vfd_cond: (batch, 1) — E[VFD-28 | survived, treatment] in [0, 28]
-            vfd_composite: (batch, 1) — p_survive × vfd_cond (final VFD-28 estimate)
-        """
         h = torch.cat([emb, treatment, noise], dim=-1)
 
         h = self.shared_trunk(h)
@@ -80,26 +50,6 @@ class CounterfactualGenerator(nn.Module):
         return p_survive, vfd_cond, vfd_composite
 
     def forward_with_gated_emb(self, emb, treatment, noise, emb_survival, emb_vfd):
-        """
-        [v6 NEW — Phase 2b] Generate outcomes using gated embeddings.
-
-        Routes emb_survival to survival head and emb_vfd to VFD head,
-        enforcing the competing risks decomposition architecturally.
-
-        # Ref: Fine & Gray JASA 1999 — competing risks require separate modeling
-        #      of death and ventilation liberation hazards. By routing gated
-        #      embeddings to the corresponding heads, we enforce this separation
-        #      architecturally rather than relying solely on loss-based incentives.
-        # Ref: This addresses Deficiency #9 in our optimization proposal — the
-        #      gate was previously disconnected from the generator heads.
-
-        Args:
-            emb: (batch, emb_dim) — full embedding (for shared trunk)
-            treatment: (batch, 1)
-            noise: (batch, noise_dim)
-            emb_survival: (batch, emb_dim) — survival-gated embedding
-            emb_vfd: (batch, emb_dim) — VFD-gated embedding
-        """
         h = torch.cat([emb, treatment, noise], dim=-1)
         h = self.shared_trunk(h)
 
@@ -114,20 +64,6 @@ class CounterfactualGenerator(nn.Module):
 
     def generate_counterfactuals(self, emb, noise,
                                   emb_survival=None, emb_vfd=None):
-        """
-        Generate outcomes under BOTH treatments (for discriminator training).
-
-        [v6 UPDATE] Accepts optional gated embeddings for Phase 2b routing.
-
-        Args:
-            emb: (batch, emb_dim) — patient embedding
-            noise: (batch, noise_dim)
-            emb_survival: (batch, emb_dim) — survival-gated embedding [v6 NEW]
-            emb_vfd: (batch, emb_dim) — VFD-gated embedding [v6 NEW]
-        Returns:
-            Dict with keys: p_surv_0, vfd_cond_0, vfd_0 (IMV arm)
-                           p_surv_1, vfd_cond_1, vfd_1 (NIRS arm)
-        """
         batch_size = emb.size(0)
         device = emb.device
 
