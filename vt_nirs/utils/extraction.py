@@ -1,32 +1,4 @@
-"""
-extraction.py — BigQuery Data Extraction for VT-NIRS
-=====================================================
-Follows the exact patterns from VT_ITHE_Code (m0_config, m1_cohort,
-m2_outcome_ipcw, m3_covariates, m6_eicu_validation).
 
-Key design decisions inherited from VT_ITHE_Code:
-  - Separate BILLING_PROJECT vs DATA_PROJECT
-  - run_bq() helper with timing
-  - Backtick-quoted table paths in SQL
-  - ARF identification (ICD-10 + physiological confirmation)
-  - Exclusions (DNR/DNI, crash intubation, chronic vent)
-  - Treatment assignment cross-validated across derived.ventilation,
-    procedureevents, and HFNC chartevents
-  - VFD-28 from ventilation timeline clipped to 28-day window
-  - eICU pipeline using ventilation_events + careplan + treatment tables
-
-Additions for VT-NIRS (beyond VT_ITHE_Code):
-  - Temporal covariate extraction (chartevents time series for Transformer)
-  - Sequence building at 0.5h resolution
-  - PSM on baseline covariates
-
-Refs:
-  # Ref: VT_ITHE_Code/m0_config.py — config, ITEMIDS, FEATURE_COLS
-  # Ref: VT_ITHE_Code/m1_cohort.py — cohort extraction pipeline
-  # Ref: VT_ITHE_Code/m2_outcome_ipcw.py — VFD-28 computation
-  # Ref: VT_ITHE_Code/m3_covariates.py — 23-covariate extraction
-  # Ref: VT_ITHE_Code/m6_eicu_validation.py — eICU pipeline
-"""
 
 import os, time, warnings
 import numpy as np
