@@ -60,30 +60,6 @@ MIMIC_ITEMIDS = {
 
 
 def compute_vfd28(vent_duration_days, survived_28d):
-    """
-    Compute Ventilator-Free Days at 28 days (VFD-28).
-
-    Definition:
-      - If patient survives to day 28: VFD-28 = max(0, 28 - vent_duration_days)
-      - If patient dies before day 28: VFD-28 = 0
-
-    # Ref: Schoenfeld DA et al. "Statistical Evaluation of Ventilator-Free Days
-    #      as an Efficacy Measure in Clinical Trials of Treatments for Acute
-    #      Respiratory Distress Syndrome." Crit Care Med 2002.
-    #      — Original definition of VFD-28.
-    # Ref: Yehya N et al. AJRCCM 2019 — discusses limitations of VFD composite.
-
-    NOTE: This INCLUDES death patients (VFD=0). This is intentional:
-    our survival-decomposed architecture handles the censoring directly,
-    rather than excluding deaths like the AMIA binary mortality approach.
-
-    Args:
-        vent_duration_days: (N,) — total days on mechanical ventilation
-        survived_28d: (N,) — 1 if survived to day 28, 0 if died
-    Returns:
-        vfd28: (N,) — VFD-28 values in [0, 28]
-        delta: (N,) — survival indicator (same as survived_28d)
-    """
     vfd28 = np.where(
         survived_28d == 1,
         np.maximum(0, 28 - vent_duration_days),
@@ -93,24 +69,6 @@ def compute_vfd28(vent_duration_days, survived_28d):
 
 
 class NIRSTwinDataset(Dataset):
-    """
-    PyTorch Dataset for VT-NIRS training.
-
-    Each sample: (time_series, treatment, vfd_observed, delta, static_covariates)
-
-    Structure follows:
-    # Ref: graphspa training/loader.py ICUVariableLengthDataset:
-    #      returns (data, pad_mask, label) tuples from HDF5.
-    # Ref: DT_ITE_Final.ipynb line 2343-2346: TensorDataset + DataLoader
-
-    Args:
-        sequences: (N, T, D) — time series of D covariates over T timesteps
-        treatments: (N,) — 0=IMV, 1=NIRS
-        vfd_observed: (N,) — observed VFD-28
-        delta: (N,) — 1=survived, 0=died
-        pad_masks: (N, T) — True where padded (optional)
-    """
-
     def __init__(self, sequences, treatments, vfd_observed, delta, pad_masks=None):
         self.sequences = torch.FloatTensor(sequences)
         self.treatments = torch.FloatTensor(treatments).unsqueeze(-1)
@@ -138,23 +96,6 @@ class NIRSTwinDataset(Dataset):
 
 def propensity_score_matching(df, treatment_col, covariate_cols,
                                caliper=0.05, random_state=42):
-    """
-    Propensity Score Matching with caliper.
-
-    Reuses the PSM pipeline from the AMIA submission:
-    # Ref: DT_ITE_Final.ipynb lines 1432-1460: LogisticRegression PSM
-    #      with caliper-based nearest-neighbor matching.
-
-    Args:
-        df: DataFrame with covariates and treatment column
-        treatment_col: Name of treatment column
-        covariate_cols: List of covariate column names for PS model
-        caliper: Maximum PS difference for matching (default: 0.05)
-        random_state: Random seed
-    Returns:
-        df_matched: Matched DataFrame
-        ps_model: Fitted propensity score model
-    """
     X = df[covariate_cols].values
     W = df[treatment_col].values
 
@@ -209,25 +150,7 @@ def create_dataloaders(
     test_fraction=0.15,
     random_state=42,
 ):
-    """
-    Create train/val/test DataLoaders.
-
-    Split strategy: random patient-level split (following graphspa).
-    # Ref: graphspa training/loader.py: 70:15:15 train/val/test splits
-    # Ref: DT_ITE_Final.ipynb: uses full PSM cohort for training
-
-    Args:
-        sequences: (N, T, D) numpy array
-        treatments: (N,) numpy array
-        vfd_observed: (N,) numpy array
-        delta: (N,) numpy array
-        pad_masks: (N, T) numpy array (optional)
-        batch_size: Batch size
-        val_fraction, test_fraction: Split proportions
-        random_state: Random seed
-    Returns:
-        train_loader, val_loader, test_loader
-    """
+   
     N = len(sequences)
     rng = np.random.RandomState(random_state)
     indices = rng.permutation(N)
