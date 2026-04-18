@@ -6,25 +6,6 @@ from torch.nn.utils import spectral_norm
 
 
 class TreatmentDiscriminator(nn.Module):
-    """
-    Discriminator that receives patient embedding + generated outcomes
-    and outputs P(real) — whether the outcomes are observed (real) or
-    generated (fake).
-
-    # Ref: Yoon et al. ICML 2018, Section 3.2: D takes (x, y^(0), y^(1))
-    #      and outputs which y is observed vs generated.
-    # Ref: DT_ITE_Final.ipynb line 2722-2738: Discriminator class
-    #      with nn.Linear(emb_dim + 2, 64) → ReLU → Linear(64, 1) → Sigmoid
-
-    [v6 UPDATE — Phase 2c] Deepened from 3 to 5 layers for better realism
-    enforcement on 6-dimensional outcome space. Added gradient penalty method.
-    # Ref: Miyato et al. ICLR 2018 — deeper SN discriminators improve sample quality
-    # Ref: Gulrajani et al. NeurIPS 2017 — gradient penalty for WGAN-GP stability
-
-    Args:
-        emb_dim: Patient embedding dimension
-        hidden_dim: Discriminator hidden size (default: 128)
-    """
 
     def __init__(self, emb_dim=128, hidden_dim=128):
         super().__init__()
@@ -46,39 +27,10 @@ class TreatmentDiscriminator(nn.Module):
         )
 
     def forward(self, emb, outcomes):
-        """
-        Args:
-            emb: (batch, emb_dim) — patient embedding
-            outcomes: (batch, 6) — [p_surv_0, vfd_cond_0, vfd_0,
-                                     p_surv_1, vfd_cond_1, vfd_1]
-        Returns:
-            p_real: (batch, 1) — probability that outcomes are real
-        """
         h = torch.cat([emb, outcomes], dim=-1)
         return self.net(h)
 
     def gradient_penalty(self, emb, real_outcomes, fake_outcomes, lambda_gp=10.0):
-        """
-        [v6 NEW — Phase 2c] Gradient penalty for improved training stability.
-
-        Enforces 1-Lipschitz constraint on the discriminator by penalizing
-        the gradient norm on interpolated samples between real and fake outcomes.
-
-        # Ref: Gulrajani et al. "Improved training of Wasserstein GANs."
-        #      NeurIPS 2017, Section 4, Eq. (3): penalty on gradient norm
-        #      of critic evaluated at random interpolations between real/fake.
-        #      λ_gp = 10 is the default from their paper.
-        # Ref: CMU ML Blog (2022): combining spectral norm + gradient penalty
-        #      provides better convergence than either alone.
-
-        Args:
-            emb: (batch, emb_dim) — patient embeddings
-            real_outcomes: (batch, 6) — real outcome tensor
-            fake_outcomes: (batch, 6) — generator outcome tensor
-            lambda_gp: gradient penalty coefficient (default: 10.0)
-        Returns:
-            gp: scalar — gradient penalty loss
-        """
         batch_size = real_outcomes.size(0)
         device = real_outcomes.device
 
