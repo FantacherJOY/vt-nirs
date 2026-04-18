@@ -1,38 +1,3 @@
-"""
-encoder.py — Base Temporal Transformer Encoder
-===============================================
-Encodes multivariate ICU time series into fixed-dimensional patient embeddings.
-
-This is the BASE encoder (analogous to graphspa/training/layer.py).
-The novel survival-aware variant is in encoder_sa.py (analogous to layer_dev.py).
-
-Architecture:
-  Input: (batch, T, D) — T timesteps, D covariates
-  → Sinusoidal positional encoding (Vaswani et al., NeurIPS 2017, Section 3.5)
-  → TransformerEncoder (4 layers, 4 heads)
-  → Temporal aggregation (mean over time)
-  → Linear projection → (batch, d_model)
-
-Design choices:
-  - Sinusoidal positional encoding rather than learned, following Vaswani et al.
-    NeurIPS 2017 (Section 3.5: "sinusoidal version... would allow the model
-    to extrapolate to sequence lengths longer than the ones encountered during
-    training"). We use this because ICU stays have variable observation windows.
-    # Ref: Vaswani et al. NeurIPS 2017, Section 3.5, Eq. (3)-(4)
-
-  - TransformerEncoder over LSTM because attention captures long-range
-    dependencies across the 24h pre-treatment window without vanishing gradients.
-    Justified by CLEF (Li et al., arXiv 2502.03569) and TIMING (Jang et al.,
-    ICML 2025) which both use Transformer encoders for ICU time series.
-    # Ref: CLEF model.py lines 46-78 use TransformerEncoder for EHR sequences
-    # Ref: TIMING txai/models/encoders/transformer_simple.py uses TransformerMVTS
-
-  - Mean temporal aggregation (not last-token) because ICU data has irregular
-    sampling and padding; mean pooling is robust to sequence length variation.
-    This follows graphspa (training/net.py lines 118-120) which uses
-    AdaptiveAvgPool2d for temporal aggregation.
-    # Ref: graphspa net.py lines 118-120: nn.AdaptiveAvgPool2d
-"""
 
 import math
 import torch
