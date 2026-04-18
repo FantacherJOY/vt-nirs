@@ -1,34 +1,4 @@
-"""
-domain_adapt.py — Domain Adaptation for External Validation
-=============================================================
-[v6 NEW — Phase 3b] Provides domain adaptation utilities for
-transferring the VT-NIRS model from MIMIC-IV to eICU.
 
-Motivation:
-  MIMIC-IV and eICU have different ICU populations, documentation
-  practices, and covariate distributions. Direct application of a
-  MIMIC-trained model to eICU introduces distribution shift that
-  biases ITE estimates.
-
-# Ref: Evaluating deep learning sepsis prediction models in ICUs under
-#      distribution shift. npj Digital Medicine 2026.
-#      Finding: supervised domain adaptation yields most stable gains;
-#      fine-tuning consistently underperforms. Sections 3-4.
-#
-# Ref: Rojas-Carulla, Schölkopf et al. "Invariant Models for Causal
-#      Transfer Learning." JMLR 2018. Section 3: learn invariant causal
-#      representations that transfer across domains.
-#
-# Ref: Kern et al. "Multi-CATE: Multi-Accurate Conditional Average
-#      Treatment Effect Estimation." ICLR 2025. Section 3: post-processes
-#      CATE estimators for unbiased prediction on unknown deployment
-#      populations using multi-accuracy.
-
-Methods implemented:
-  1. Propensity re-calibration: re-estimate propensity scores on target domain
-  2. Covariate distribution matching: reweight source samples to match target
-  3. Feature-level standardization with target statistics
-"""
 
 import numpy as np
 import torch
