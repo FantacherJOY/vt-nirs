@@ -1,31 +1,4 @@
-"""
-losses.py — Censoring-Aware Adversarial Loss Functions
-=======================================================
-The main novelty of VT-NIRS lives here (and in encoder_sa.py).
 
-This follows the lab pattern where the loss function carries the
-methodological contribution:
-  # Ref: mcem attr/models/mcextremal_mask.py lines 226-311 — novelty is in
-  #      the composite loss (entropy + variance + temporal + consistency)
-  # Ref: causally-emergent-representations trainers.py — novelty is entirely
-  #      in the Psi (emergence) loss function
-  # Ref: TIMING txai/utils/predictors/loss.py — GSATLoss, ConnectLoss,
-  #      EmbeddingConsistencyLoss for multi-objective training
-
-Loss components:
-  1. L_adversarial: GAN loss for counterfactual realism (from GANITE base)
-  2. L_survival: BCE for survival probability (NOVEL — censoring-aware)
-  3. L_vfd: MSE for conditional VFD among survivors only (NOVEL)
-  4. L_consistency: JS divergence between Generator and Predictor outputs
-  5. L_gate_entropy: Entropy regularization for survival gate sharpness
-
-  L_total = L_adv + λ_s·L_survival + λ_v·L_vfd + λ_c·L_consistency + λ_g·L_gate
-
-  # Ref: Yoon et al. ICML 2018, Section 3.1, Eq. (4)-(5) — adversarial loss
-  # Ref: Fine & Gray JASA 1999 — competing risks motivation for decomposition
-  # Ref: mcem loss structure: alpha*base + beta*entropy + delta*variance
-  #      We follow the same weighted multi-objective pattern.
-"""
 
 import torch
 import torch.nn as nn
