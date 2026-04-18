@@ -43,26 +43,6 @@ def recalibrate_propensity(model, target_loader, device='cuda'):
 
 
 def compute_importance_weights(source_features, target_features, method='kliep'):
-    """
-    Compute importance weights for covariate shift correction.
-
-    Reweights source (MIMIC) samples to match target (eICU) distribution,
-    enabling unbiased ITE estimation on the target population.
-
-    # Ref: Shimodaira H. "Improving predictive inference under covariate
-    #      shift by weighting the log-likelihood function." JASA 2000.
-    #      Section 2: importance weighting under covariate shift.
-    # Ref: Sugiyama et al. "Direct importance estimation with model
-    #      selection and its application to covariate shift adaptation."
-    #      NeurIPS 2008. KLIEP method for density ratio estimation.
-
-    Args:
-        source_features: (n_source, d) — MIMIC patient features
-        target_features: (n_target, d) — eICU patient features
-        method: 'logistic' or 'kliep' (default: 'kliep')
-    Returns:
-        weights: (n_source,) — importance weights
-    """
     from sklearn.linear_model import LogisticRegression
 
     if method == 'logistic':
@@ -108,23 +88,6 @@ def compute_importance_weights(source_features, target_features, method='kliep')
 
 def apply_domain_adaptation(model, source_loader, target_loader,
                             config, method='propensity_recalib'):
-    """
-    Apply domain adaptation to VT-NIRS model for external validation.
-
-    # Ref: npj Digital Medicine 2026: supervised domain adaptation yields
-    #      most stable gains across MIMIC-IV, eICU, HiRID. Section 4.
-    # Ref: Kern et al. ICLR 2025: Multi-CATE post-processing for
-    #      unbiased CATE on unknown deployment populations.
-
-    Args:
-        model: trained VTNIRSModel
-        source_loader: MIMIC DataLoader
-        target_loader: eICU DataLoader
-        config: training configuration
-        method: 'propensity_recalib', 'importance_weight', or 'fine_tune'
-    Returns:
-        adapted_model or adaptation_params
-    """
     device = config.get('device', 'cuda')
 
     if method == 'propensity_recalib':
