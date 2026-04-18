@@ -1,48 +1,4 @@
-"""
-vt_nirs.py — Full VT-NIRS Model Assembly
-==========================================
-Assembles all components into the complete VT-NIRS model.
 
-Analogous to:
-  - graphspa/training/net.py (GNNStack assembling layers)
-  - graphspa/training/net_dev.py (GNNStack with DAE layers)
-
-This module connects:
-  1. SurvivalAwareTransformerEncoder → patient embedding with survival gate
-  2. CounterfactualGenerator → adversarial counterfactual generation
-  3. TreatmentDiscriminator → adversarial realism enforcement
-  4. ITEPredictor → inference-time ITE prediction
-
-Training follows GANITE's two-stage adversarial procedure:
-  Stage 1: Train Generator + Discriminator adversarially
-  Stage 2: Train ITEPredictor on Generator's pseudo-labels
-
-  # Ref: Yoon et al. ICML 2018, Section 3 — two-stage training
-  # Ref: DT_ITE_Final.ipynb training loop (lines 2820-2870)
-
-Model architecture:
-
-  Input: (batch, T, 23 covariates)
-         ↓
-  SurvivalAwareTransformerEncoder
-         ↓
-  emb, emb_survival, emb_vfd, gate, attn_out
-         ↓
-  ┌──────────────────────────────────────┐
-  │  Stage 1: Adversarial Training       │
-  │  Generator(emb, treatment, noise)    │
-  │  → p_survive, vfd_cond, vfd_28      │
-  │  Discriminator(emb, outcomes)        │
-  │  → real/fake                         │
-  └──────────────────────────────────────┘
-         ↓
-  ┌──────────────────────────────────────┐
-  │  Stage 2: ITE Prediction             │
-  │  ITEPredictor(emb)                   │
-  │  → ITE = VFD(NIRS) - VFD(IMV)       │
-  │  → ITE_survival, ITE_vfd_cond       │
-  └──────────────────────────────────────┘
-"""
 
 import torch
 import torch.nn as nn
