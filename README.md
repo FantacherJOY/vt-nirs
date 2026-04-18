@@ -6,9 +6,9 @@ This repository contains the code for **VT-NIRS**, a causal deep learning framew
 
 VT-NIRS consists of three stages:
 
-1. **Survival-Aware Encoder** — A 4-layer Transformer encoder with an attention gate that separates learned representations into mortality (z_surv) and ventilation (z_vfd) components.
-2. **Adversarial Pretraining** — A counterfactual generator produces potential outcomes under both treatment arms, trained adversarially against a discriminator (adapted from GANITE, Yoon et al. 2018).
-3. **ITE Estimation** — A doubly-robust pseudo-outcome module (Kennedy, 2023) supervises a direct ITE prediction head, with MMD and propensity-based representation balancing (Shalit et al., 2017; Shi et al., 2019).
+1. **Survival-Aware Encoder**: A 4-layer Transformer encoder with an attention gate that separates learned representations into mortality (z_surv) and ventilation (z_vfd) components.
+2. **Adversarial Pretraining**: A counterfactual generator produces potential outcomes under both treatment arms, trained adversarially against a discriminator (adapted from GANITE, Yoon et al. 2018).
+3. **ITE Estimation**: A doubly-robust pseudo-outcome module (Kennedy, 2023) supervises a direct ITE prediction head, with MMD and propensity-based representation balancing (Shalit et al., 2017; Shi et al., 2019).
 
 ## Data
 
@@ -75,11 +75,6 @@ cd vt_nirs
 BILLING_PROJECT = "YOUR_GCP_PROJECT_ID"
 ```
 
-3. Authenticate with Google Cloud:
-```python
-from google.colab import auth
-auth.authenticate_user()
-```
 
 ## Usage
 
@@ -91,9 +86,5 @@ Open `VT_NIRS_Run_final.ipynb` and run cells sequentially. The notebook executes
 4. **Stage 2 Training** — Doubly-robust ITE refinement with frozen encoder
 5. **Evaluation** — Policy value, C-for-benefit, subgroup analysis, baseline comparisons (T-Learner, Causal Forest)
 6. **Ablation Study** — Gate removal ablation
-7. **External Validation** — eICU-CRD cohort extraction and zero-shot transfer evaluation
+7. **External Validation** — eICU-CRD cohort extraction and evaluation
 
-
-## License
-
-This project is intended for research purposes only. The data used in this study is subject to PhysioNet's data use agreements.
