@@ -1,32 +1,4 @@
-"""
-train.py — Two-Stage Adversarial Training Pipeline for VT-NIRS
-================================================================
-Implements the full training loop following GANITE's two-stage procedure,
-adapted for our censoring-aware survival-decomposed architecture.
 
-Training structure follows:
-  # Ref: DT_ITE_Final.ipynb lines 2820-2870: GANITE training loop
-  #      — Stage 1: Generator + Discriminator adversarial training
-  #      — Stage 2: ITEPredictor training on Generator's pseudo-labels
-  # Ref: graphspa training/01a_HiRID_baseline.ipynb:
-  #      train/val/test per epoch, best model checkpoint, LR scheduler
-  # Ref: mcem: PyTorch Lightning with multi-objective loss
-
-Stage 1 (adversarial):
-  For each batch:
-    1. Encode patient sequences → embeddings
-    2. Generator produces counterfactual outcomes (VFD-28 decomposed)
-    3. Discriminator trained to distinguish real vs generated
-    4. Generator trained to fool discriminator + match observed outcomes
-    5. Survival and VFD losses enforce censoring-aware learning
-
-Stage 2 (prediction):
-  For each batch:
-    1. Freeze Generator
-    2. Generator produces pseudo-labels for counterfactual outcomes
-    3. ITEPredictor trained to match Generator's outputs
-    4. Consistency loss ensures predictor aligns with generator
-"""
 
 import os
 import json
