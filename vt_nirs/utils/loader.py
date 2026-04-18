@@ -1,19 +1,4 @@
-"""
-loader.py — Data Loading Pipeline for MIMIC-IV and eICU-CRD
-=============================================================
-Handles cohort extraction, VFD-28 computation, PSM, and DataLoader creation.
 
-Data pipeline reuses patterns from:
-  # Ref: DT_ITE_Final.ipynb — BigQuery MIMIC-IV extraction, PSM pipeline
-  # Ref: NIRS TWIN.ipynb — ventilation event extraction, treatment categorization
-  # Ref: graphspa training/loader.py — ICUVariableLengthDataset with HDF5,
-  #      pad_mask creation, variable-length handling.
-
-The 23 covariates are literature-grounded:
-  # Ref: Bellani et al. JAMA 2016 (our [1]) — LUNG SAFE study covariates
-  # Ref: Mosier et al. AJRCCM 2023 (our [8]) — respiratory support variables
-  # Ref: Warnaar et al. Crit Care 2023 (our [21]) — ITE covariates for ventilation
-"""
 
 import numpy as np
 import pandas as pd
