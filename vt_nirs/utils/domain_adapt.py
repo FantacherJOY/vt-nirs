@@ -6,24 +6,6 @@ import torch.nn as nn
 
 
 def recalibrate_propensity(model, target_loader, device='cuda'):
-    """
-    Re-calibrate propensity scores on the target domain (eICU).
-
-    Uses the frozen encoder + propensity head from MIMIC training,
-    but recalibrates using Platt scaling on eICU data.
-
-    # Ref: Platt J. "Probabilistic Outputs for SVMs." Advances in Large
-    #      Margin Classifiers 1999. Section 2: sigmoid calibration.
-    # Ref: npj Digital Medicine 2026: re-calibration is a lightweight
-    #      domain adaptation that improves AUROC without full retraining.
-
-    Args:
-        model: trained VTNIRSModel
-        target_loader: DataLoader for target domain (eICU)
-        device: computation device
-    Returns:
-        calibration_params: (a, b) for Platt scaling: P_calib = sigmoid(a*logit + b)
-    """
     model.eval()
     all_logits = []
     all_treatments = []
