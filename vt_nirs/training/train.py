@@ -54,15 +54,6 @@ DEFAULT_CONFIG = {
 
 
 def train_stage1(model, train_loader, val_loader, loss_fn, config, save_dir):
-    """
-    Stage 1: Adversarial training of Encoder + Generator + Discriminator.
-
-    # Ref: Yoon et al. ICML 2018, Section 3, Algorithm 1 —
-    #      alternating Generator and Discriminator updates.
-    # Ref: DT_ITE_Final.ipynb lines 2820-2870: training loop structure
-    # Ref: graphspa training/01a_HiRID_baseline.ipynb:
-    #      epoch loop with train/val phases, LR scheduler, checkpointing.
-    """
     device = config['device']
     model = model.to(device)
 
@@ -229,14 +220,6 @@ def train_stage1(model, train_loader, val_loader, loss_fn, config, save_dir):
 
 
 def train_stage2(model, train_loader, val_loader, loss_fn, config, save_dir):
-    """
-    Stage 2: Train ITEPredictor on Generator's pseudo-labels.
-
-    # Ref: Yoon et al. ICML 2018, Section 3.3:
-    #      "Given a new sample x, we use the ITE generator [predictor]
-    #       to directly estimate the ITE."
-    # Ref: DT_ITE_Final.ipynb lines 2857-2868: predictor training loop
-    """
     device = config['device']
     model = model.to(device)
 
@@ -348,12 +331,6 @@ def train_stage2(model, train_loader, val_loader, loss_fn, config, save_dir):
 
 
 def evaluate(model, test_loader, config):
-    """
-    Full evaluation on test set.
-
-    # Ref: graphspa training notebooks: validate function with
-    #      metrics computation on held-out test set.
-    """
     device = config['device']
     model = model.to(device)
     model.eval()
@@ -388,17 +365,6 @@ def evaluate(model, test_loader, config):
 
 
 def _build_real_outcomes(gen_outputs, treatment, vfd_observed, delta):
-    """
-    Build "real" outcome tensor for discriminator training.
-
-    For the observed treatment arm: use actual observed values.
-    For the counterfactual arm: use Generator's estimates (this is
-    the key insight of GANITE — we don't have counterfactual ground truth).
-
-    # Ref: Yoon et al. ICML 2018, Section 3.2:
-    #      Discriminator sees (x, y_factual, y_counterfactual)
-    #      where y_factual is real and y_counterfactual is from G.
-    """
     t = treatment.squeeze(-1)
 
     real_p_surv = delta
@@ -420,20 +386,6 @@ def _build_real_outcomes(gen_outputs, treatment, vfd_observed, delta):
 
 
 def run_full_pipeline(train_loader, val_loader, test_loader, config=None):
-    """
-    Run the complete VT-NIRS training and evaluation pipeline.
-
-    # Ref: graphspa training notebooks: main_work() function
-    #      orchestrating train → validate → test → save.
-
-    Args:
-        train_loader, val_loader, test_loader: DataLoaders
-        config: Configuration dict (uses DEFAULT_CONFIG if None)
-    Returns:
-        model: Trained VTNIRSModel
-        metrics: Test set evaluation results
-        train_logs: Training history (Stage 1 + Stage 2)
-    """
     if config is None:
         config = DEFAULT_CONFIG.copy()
 
