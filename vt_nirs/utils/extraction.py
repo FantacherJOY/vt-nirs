@@ -103,10 +103,6 @@ def safe_divide(a, b, fill=np.nan):
 
 
 def extract_icu_stays():
-    """
-    Pull adult ICU stays with LOS >= 0.5 days.
-    # Ref: VT_ITHE_Code/m1_cohort.py lines 27-51 — extract_icu_stays()
-    """
     sql = f"""
     SELECT
         ie.subject_id,
@@ -200,21 +196,6 @@ def identify_arf(df_stays):
 
 
 def apply_exclusions(df_arf):
-    """
-    Exclude DNR/DNI, crash intubation, chronic vent.
-    # Ref: VT_ITHE_Code/m1_cohort.py lines 160-231 — apply_exclusions()
-    """
-    stay_ids = ids_str(df_arf["stay_id"])
-    n0 = len(df_arf)
-
-    sql_dnr = f"""
-    SELECT DISTINCT stay_id
-    FROM `{MIMIC['icu']}.chartevents`
-    WHERE itemid = 223758
-      AND value IN ('DNR', 'DNI', 'DNR/DNI', 'Comfort Measures',
-                    'CMO', 'Do Not Intubate', 'Do Not Resuscitate')
-      AND stay_id IN ({stay_ids})
-    """
     print("1.3  Applying exclusions...")
     df_dnr = run_bq(sql_dnr)
     excl_dnr = set(df_dnr["stay_id"])
@@ -254,25 +235,7 @@ def apply_exclusions(df_arf):
 
 
 def assign_treatment(df_cohort):
-    """
-    Treatment assignment with ventilation correction from procedureevents.
-
-    Pipeline (from DT_ITE_Final.ipynb Cells 4-5 + NIRS Project.ipynb Cells 30,55,61,63):
-      1. Query derived.ventilation for ALL statuses (including None/SupplementalOxygen)
-      2. Query procedureevents for NIV/Invasive procedures
-      3. Correct: where ventilation says None/SupplementalOxygen but a procedure
-         overlaps in time → upgrade to InvasiveVent or NonInvasiveVent
-      4. Map corrected statuses: HFNC → NIV, Tracheostomy → Invasive
-      5. Find first NIV and first Invasive per stay → categorize → Treatment_W
-
-    # Ref: DT_ITE_Final.ipynb Cell 4 — ventilation correction + vent_map
-    # Ref: DT_ITE_Final.ipynb Cell 5 — categorize_stay + ITT treatment mapping
-    # Ref: NIRS Project.ipynb Cell 30 — correction logic (priority_map)
-    # Ref: NIRS Project.ipynb Cell 55 — vent_map includes HFNC as NIV
-    # Ref: NIRS Project.ipynb Cell 67 — expected output: IMV >> NIRS (~8:1 ratio)
-    """
     stay_ids = ids_str(df_cohort["stay_id"])
-
     sql_vent = f"""
     SELECT v.stay_id, v.starttime, v.endtime, v.ventilation_status
     FROM `{MIMIC['derived']}.ventilation` v
@@ -398,10 +361,6 @@ def assign_treatment(df_cohort):
 
 
 def build_cohort():
-    """
-    End-to-end cohort construction.
-    # Ref: VT_ITHE_Code/m1_cohort.py lines 383-397 — build_cohort()
-    """
     print("=" * 65)
     print("  VT-NIRS COHORT EXTRACTION  (MIMIC-IV)")
     print("=" * 65)
@@ -418,10 +377,6 @@ def build_cohort():
 
 
 def compute_vfd28(df_cohort):
-    """
-    VFD-28 from ventilation timeline clipped to 28-day window.
-    # Ref: VT_ITHE_Code/m2_outcome_ipcw.py lines 24-129 — compute_vfd28()
-    """
     stay_ids = ids_str(df_cohort["stay_id"])
 
     sql_vent_full = f"""
@@ -503,13 +458,6 @@ def compute_vfd28(df_cohort):
 
 
 def extract_baseline_covariates(df_cohort):
-    """
-    Extract 23 baseline (first-24h) covariates.
-    # Ref: VT_ITHE_Code/m3_covariates.py lines 28-97  — extract_baseline()
-    # Ref: VT_ITHE_Code/m3_covariates.py lines 103-132 — extract_abg()
-    # Ref: VT_ITHE_Code/m3_covariates.py lines 138-182 — extract_comorbidities()
-    # Ref: VT_ITHE_Code/m3_covariates.py lines 188-267 — build_covariates()
-    """
     stay_ids = ids_str(df_cohort["stay_id"])
 
     sql_base = f"""
@@ -633,10 +581,6 @@ def extract_baseline_covariates(df_cohort):
 
 
 def standardize_features(df, cols=None, reference_df=None):
-    """
-    Z-score standardization for continuous features.
-    # Ref: VT_ITHE_Code/m3_covariates.py lines 273-299 — standardize_features()
-    """
     if cols is None:
         cols = CONTINUOUS_COLS
     ref = (reference_df if reference_df is not None else df).copy()
@@ -659,14 +603,6 @@ def standardize_features(df, cols=None, reference_df=None):
 
 
 def extract_temporal_chartevents(df_cohort, chunk_size=5000):
-    """
-    Extract time-series covariates from chartevents for Transformer input.
-    This extends the baseline approach — same patients, but 0.5h-resolution
-    time series over 24h pre-treatment window.
-
-    # Ref: DT_ITE_Final.ipynb Cell 8 — BigQuery chunking pattern
-    # Ref: loader.py MIMIC_ITEMIDS — itemid mapping
-    """
     stay_ids = df_cohort['stay_id'].tolist()
     chunks = [stay_ids[i:i + chunk_size]
               for i in range(0, len(stay_ids), chunk_size)]
@@ -809,10 +745,6 @@ def build_temporal_sequences(df_vitals, df_cohort, seq_len=48):
 
 
 def propensity_score_match(X_all, W_all, caliper_scale=0.2, random_state=42):
-    """
-    PSM with logit-caliper on baseline covariates.
-    # Ref: DT_ITE_Final.ipynb Cell 12 — LogisticRegression PSM
-    """
     X_baseline = X_all[:, -1, :]
     X_baseline_clean = np.nan_to_num(X_baseline, nan=0.0)
 
@@ -848,7 +780,6 @@ def propensity_score_match(X_all, W_all, caliper_scale=0.2, random_state=42):
 
 
 def normalize_and_mask(X_psm, n_covariates):
-    """Normalize time series and create pad masks."""
     X_flat = X_psm.reshape(-1, n_covariates)
     ts_scaler = StandardScaler()
     X_flat_scaled = ts_scaler.fit_transform(
@@ -859,9 +790,6 @@ def normalize_and_mask(X_psm, n_covariates):
 
 
 def extract_eicu_cohort():
-    """
-    # Ref: VT_ITHE_Code/m6_eicu_validation.py lines 24-60 — extract_eicu_cohort()
-    """
     sql = f"""
     SELECT
         p.patientunitstayid   AS stay_id,
@@ -893,19 +821,6 @@ def extract_eicu_cohort():
 
 
 def assign_eicu_treatment(df_eicu):
-    """
-    eICU treatment assignment using ONLY ventilation_events with start/end pairing.
-
-    # Ref: my existing code/NIRS_eICU.ipynb Cell 12 — start/end event pairing
-    #      with get_valid_start_times() to filter pre-ICU episodes
-    # Ref: NIRS_eICU.ipynb Cell 17 — categorize_stay() logic
-    # Ref: NIRS_eICU.ipynb Cell 19 output — expected: IMV~8,453, NIRS~2,066
-
-    NOTE: Previous version used careplangeneral + treatment tables as supplements,
-    but '%non-invasive%' in careplangeneral captures non-ventilation items
-    (monitoring, BP, etc.), inflating NIRS to 16k+. The original NIRS_eICU.ipynb
-    uses ONLY ventilation_events with proper start/end pairing → ~2,066 NIRS.
-    """
     _elig = f"""
         SELECT p.patientunitstayid
         FROM `{EICU['main']}.patient` p
@@ -1018,10 +933,6 @@ def assign_eicu_treatment(df_eicu):
 
 
 def extract_eicu_covariates(df_eicu):
-    """
-    23 covariates from eICU, harmonized to MIMIC naming.
-    # Ref: VT_ITHE_Code/m6_eicu_validation.py lines 223-406
-    """
     _elig = f"""
         SELECT p.patientunitstayid
         FROM `{EICU['main']}.patient` p
@@ -1168,10 +1079,6 @@ def extract_eicu_covariates(df_eicu):
 
 
 def compute_eicu_vfd28(df_eicu):
-    """
-    VFD-28 for eICU using ventilation_events state machine.
-    # Ref: VT_ITHE_Code/m6_eicu_validation.py lines 412-514
-    """
     _elig = f"""
         SELECT p.patientunitstayid
         FROM `{EICU['main']}.patient` p
@@ -1252,22 +1159,6 @@ def compute_eicu_vfd28(df_eicu):
 
 def propensity_score_match_baseline(X_baseline, W, feature_cols,
                                      caliper_scale=0.2, random_state=42):
-    """
-    PSM on baseline (non-temporal) covariates for eICU external validation.
-    Uses same logic as MIMIC PSM but operates on 2D baseline covariates
-    instead of 3D temporal tensors.
-
-    Args:
-        X_baseline: (N, n_features) — baseline covariate matrix
-        W: (N,) — treatment assignment (1=NIRS, 0=IMV)
-        feature_cols: list of feature column names (for diagnostics)
-        caliper_scale: multiplier for caliper width (default 0.2)
-        random_state: random seed
-    Returns:
-        psm_idx: array of matched patient indices
-        ps_model: fitted LogisticRegression
-        ps: propensity scores for all patients
-    """
     X_clean = np.nan_to_num(X_baseline, nan=0.0)
 
     scaler = StandardScaler()
@@ -1305,18 +1196,6 @@ def propensity_score_match_baseline(X_baseline, W, feature_cols,
 
 def run_mimic_extraction(client=None, dataset_id=None, seq_len=48,
                          chunk_size=5000):
-    """
-    Full MIMIC-IV extraction pipeline — cohort, VFD-28, covariates,
-    temporal sequences. Uses the VT_ITHE_Code patterns throughout.
-
-    Args:
-        client: (optional) BigQuery client. If None, init_client() is called.
-        dataset_id: (ignored, kept for backward compat — uses MIMIC dict)
-        seq_len: temporal sequence length (default 48 = 24h @ 0.5h)
-        chunk_size: BigQuery chunk size for chartevents
-    Returns:
-        dict with X, W, VFD, D, valid_ids, df_cohort, df_vfd, df_cov
-    """
     if client is not None:
         global _client
         _client = client
@@ -1364,22 +1243,6 @@ def run_mimic_extraction(client=None, dataset_id=None, seq_len=48,
 
 
 def extract_eicu_temporal(df_eicu_tx, chunk_size=5000):
-    """
-    Extract time-series covariates from eICU for Transformer input.
-    Mirrors MIMIC extract_temporal_chartevents() but uses:
-      - nursecharting: HR, RR, SpO2, MBP, Temperature
-      - vitalperiodic: HR, RR, SpO2, MBP, Temperature (automated monitor)
-      - lab: PaO2, PaCO2, pH, lactate, creatinine, bilirubin, platelets, WBC
-      - respiratorycharting: FiO2, PEEP
-
-    Offsets are in minutes from ICU admission. We query 0-1440 min (24h).
-
-    Args:
-        df_eicu_tx: DataFrame with stay_id, Treatment_W, etc.
-        chunk_size: BigQuery chunk size
-    Returns:
-        df_temporal: long-format DataFrame with stay_id, offset_min, and vital columns
-    """
     stay_ids = df_eicu_tx['stay_id'].tolist()
     chunks = [stay_ids[i:i + chunk_size]
               for i in range(0, len(stay_ids), chunk_size)]
@@ -1553,30 +1416,6 @@ def extract_eicu_temporal(df_eicu_tx, chunk_size=5000):
 
 def build_eicu_temporal_sequences(df_temporal, df_eicu_tx, df_eicu_vfd,
                                    df_eicu_cov, seq_len=48):
-    """
-    Build padded time series tensors from eICU temporal data.
-    Mirrors build_temporal_sequences() for MIMIC.
-
-    Maps to the same 23 TEMPORAL_FEATURE_COLS:
-      age, gender_num, bmi,
-      heart_rate, resp_rate, spo2, mbp, temperature, fio2, peep,
-      pao2, paco2, ph, pf_ratio,
-      lactate, creatinine, bilirubin, platelets, wbc,
-      sofa_score, gcs_total,
-      hours_since_admit, vasopressor_flag
-
-    Static covariates (age, gender, bmi, sofa, gcs) are broadcast across
-    all timesteps. hours_since_admit is computed from offset_bin.
-
-    Args:
-        df_temporal: from extract_eicu_temporal()
-        df_eicu_tx: cohort with stay_id, Treatment_W, age_clean, gender, etc.
-        df_eicu_vfd: VFD-28 outcomes with stay_id, vfd28, died_28d
-        df_eicu_cov: baseline covariates with stay_id, sofa_X, gcs_X, bmi_X
-        seq_len: target sequence length (default 48)
-    Returns:
-        X, W, VFD, D, valid_ids — matching MIMIC pipeline output format
-    """
     def _pad_sequences(seqs, maxlen, dtype='float32', padding='pre', value=0.0):
         n_feat = seqs[0].shape[1] if len(seqs) > 0 else 0
         out = np.full((len(seqs), maxlen, n_feat), value, dtype=dtype)
