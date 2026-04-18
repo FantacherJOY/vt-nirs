@@ -4,26 +4,6 @@ import torch.nn as nn
 
 
 class ITEPredictor(nn.Module):
-    """
-    Inference-time ITE predictor with survival decomposition.
-
-    Trained on pseudo-labels from the Generator (GANITE Stage 2).
-    At inference, takes only the patient embedding (no noise).
-
-    # Ref: Yoon et al. ICML 2018, Section 3.3, Eq. (7):
-    #      ITE predictor minimizes MSE to Generator's outputs.
-    # Ref: DT_ITE_Final.ipynb line 2741-2758: ITEPredictor class
-
-    Two-headed output matches Generator structure for consistency.
-    # Ref: TIMING txai/trainers/train_mv6_consistency.py —
-    #      uses consistency loss between branches (lines 85-120).
-    #      We ensure Generator and Predictor share output structure.
-
-    Args:
-        emb_dim: Patient embedding dimension
-        hidden_dim: Predictor hidden size (default: 128)
-        dropout: Dropout rate (default: 0.1)
-    """
 
     def __init__(self, emb_dim=128, hidden_dim=128, dropout=0.1):
         super().__init__()
@@ -73,14 +53,6 @@ class ITEPredictor(nn.Module):
         )
 
     def forward(self, emb):
-        """
-        Args:
-            emb: (batch, emb_dim) — patient embedding
-        Returns:
-            Dict with per-arm survival and VFD predictions + ITE
-            'ite' is the PRIMARY ITE from the direct head (unconstrained)
-            'ite_decomposed' is the auxiliary ITE from survival × VFD heads
-        """
         h = self.shared(emb)
 
         p_surv_0 = self.surv_head_0(h)
