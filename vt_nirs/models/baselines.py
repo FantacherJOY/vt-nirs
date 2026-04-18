@@ -1,33 +1,3 @@
-"""
-baselines.py — Custom ITE Baseline Models (No Library Models)
-==============================================================
-Custom implementations of T-Learner and Causal Forest for ITE estimation,
-built from scratch using only numpy/torch. These serve as comparison
-baselines for VT-NIRS.
-
-Per project Rule #1: No library models (econml, sklearn ensemble, etc.).
-All models are custom-coded from paper descriptions.
-
-References:
-  [T-Learner] Künzel SR, Sekhon JS, Bickel PJ, Yu B. "Metalearners for
-              Estimating Heterogeneous Treatment Effects using Machine Learning."
-              PNAS 2019; 116(10):4156-4165.
-              — Section 2.1: T-Learner definition as separate μ_0, μ_1 models.
-              — Algorithm 1: fit μ_0 on control, μ_1 on treated, ITE = μ_1 - μ_0.
-
-  [Causal Forest] Athey S, Tibshirani J, Wager S. "Generalized Random Forests."
-                  Annals of Statistics 2019; 47(2):1148-1178.
-                  — Section 4: Causal forest as local moment estimator.
-                  — Algorithm 1: honest splitting, doubly-robust scoring.
-
-  [CART foundation] Breiman L. "Random Forests." Machine Learning 2001; 45:5-32.
-                    — Section 3: bootstrap aggregation, random feature subsets.
-
-  [Honest estimation] Athey S, Imbens GW. "Recursive Partitioning for
-                      Heterogeneous Causal Effects." PNAS 2016; 113(27):7353-7360.
-                      — Section 3: honest splitting (train split ≠ estimation split).
-"""
-
 import numpy as np
 
 
