@@ -1,23 +1,4 @@
-"""
-metrics.py — Evaluation Metrics and Trend Visualization
-=========================================================
-Metrics for ITE evaluation + visualization functions matching
-the graphspa/mcem results presentation style.
 
-Results style follows:
-  # Ref: graphspa results/ notebooks — Fig2 performance curves across models,
-  #      Fig3 adjacency heatmaps, Fig4 attribution masks, Fig5 co-occurrence.
-  #      Mean ± std over 10 runs, significance markers.
-  # Ref: mcem — distribution plots (histograms), box plots for entropy,
-  #      representative case studies.
-
-Metrics for ITE evaluation:
-  - PEHE (Precision in Estimation of Heterogeneous Effects)
-  - ATE bias
-  - Policy value (mean VFD-28 under model-recommended treatment)
-  - Survival calibration (Brier score)
-  - Decomposed ITE analysis (survival vs VFD components)
-"""
 
 import numpy as np
 from sklearn.metrics import brier_score_loss, roc_auc_score, average_precision_score
