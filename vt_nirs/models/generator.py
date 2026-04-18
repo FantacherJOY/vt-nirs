@@ -1,31 +1,4 @@
-"""
-generator.py — Censoring-Aware Counterfactual Generator
-========================================================
-Generates counterfactual outcomes Y(0) and Y(1) under both treatments,
-decomposed into survival probability and conditional VFD-28.
 
-Base: GANITE CounterfactualGenerator (Yoon et al. ICML 2018, Section 3.1)
-  - Input: patient embedding + treatment indicator + noise
-  - Output: counterfactual outcomes under both treatments
-  # Ref: Yoon et al. ICML 2018, Section 3.1 "Generator"
-  # Ref: DT_ITE_Final.ipynb class CounterfactualGenerator (line 2699)
-
-Novel modification: Two-headed output with survival decomposition
-  - Head 1: P(survive to day 28 | treatment=t) ∈ [0,1]
-  - Head 2: E[VFD-28 | survived, treatment=t] ∈ [0,28]
-  - Final: VFD(t) = P(survive|t) × E[VFD|alive,t]
-
-  This decomposition is motivated by:
-  # Ref: Fine & Gray JASA 1999 — competing risks: death competes
-  #      with ventilation liberation. Section 2, Eqs (2.1)-(2.3).
-  # Ref: Yehya N et al. "Ventilator-Free Days: What Is the Right
-  #      Outcome for Lung Injury Trials?" AJRCCM 2019 — defines VFD-28
-  #      and discusses the death-as-zero problem (Section "Limitations of VFDs").
-
-  The two-head design follows the same pattern as CLEF model.py (lines 85-110)
-  which decomposes predictions into learned temporal concepts × historical values.
-  # Ref: CLEF model.py lines 85-110: concept decomposition for prediction
-"""
 
 import torch
 import torch.nn as nn
