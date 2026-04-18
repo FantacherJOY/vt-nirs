@@ -1,8 +1,3 @@
-"""
-VT-NIRS Utilities
-==================
-Loss functions, evaluation metrics, data loading, extraction, and visualization.
-"""
 
 from .losses import CensoringAwareAdversarialLoss
 from .metrics import compute_all_metrics, policy_value
