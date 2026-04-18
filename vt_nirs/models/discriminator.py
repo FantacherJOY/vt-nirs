@@ -1,29 +1,4 @@
-"""
-discriminator.py — Treatment-Aware Discriminator
-=================================================
-Distinguishes real observed outcomes from generator-produced counterfactuals.
 
-Base: GANITE Discriminator (Yoon et al. ICML 2018, Section 3.2)
-  # Ref: Yoon et al. ICML 2018, Section 3.2 "Discriminator"
-  # Ref: DT_ITE_Final.ipynb class Discriminator (line 2722)
-  #      Input: [embedding(128), y0(1), y1(1)] = 130-dim → Sigmoid
-
-Modification for VFD-28:
-  - Input now includes survival probabilities AND VFD values for both arms
-  - Deeper network with spectral-norm stabilization for adversarial training
-  # Ref: Miyato et al. "Spectral Normalization for GANs." ICLR 2018
-  #      — spectral norm prevents mode collapse in adversarial training.
-  #      Section 2, Eq. (6): constrains Lipschitz constant of discriminator.
-
-[v6 UPDATE — Phase 2c] Deepened discriminator + gradient penalty
-  # Ref: Miyato et al. ICLR 2018: recommended deeper architectures when using
-  #      spectral normalization to compensate for per-layer Lipschitz constraint.
-  # Ref: Gulrajani et al. "Improved training of Wasserstein GANs." NeurIPS 2017,
-  #      Section 4: gradient penalty enforces 1-Lipschitz on interpolated samples.
-  # Ref: CMU ML Blog "Why spectral normalization stabilizes GANs" (2022):
-  #      coupling spectral norm with zero-centered gradient penalty overcomes
-  #      convergence issues and alleviates mode collapse.
-"""
 
 import torch
 import torch.nn as nn
