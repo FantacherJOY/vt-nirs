@@ -5,60 +5,14 @@ from sklearn.metrics import brier_score_loss, roc_auc_score, average_precision_s
 
 
 def pehe(ite_pred, ite_true):
-    """
-    Precision in Estimation of Heterogeneous Effects.
-    √(E[(τ̂ - τ)²])
-
-    # Ref: Hill JL. "Bayesian Nonparametric Modeling for Causal Inference."
-    #      JCGS 2011 — introduces PEHE for ITE evaluation.
-    # Ref: Yoon et al. ICML 2018, Section 4.1: PEHE as primary metric.
-
-    Args:
-        ite_pred: (N,) — predicted ITE
-        ite_true: (N,) — true ITE (from semi-synthetic or held-out)
-    Returns:
-        float — PEHE value (lower is better)
-    """
     return np.sqrt(np.mean((ite_pred - ite_true) ** 2))
 
 
 def ate_bias(ite_pred, ite_true):
-    """
-    Bias in Average Treatment Effect estimation.
-    |E[τ̂] - E[τ]|
-
-    # Ref: Yoon et al. ICML 2018, Section 4.1: ATE bias metric.
-
-    Args:
-        ite_pred: (N,) — predicted ITE
-        ite_true: (N,) — true ITE
-    Returns:
-        float — absolute ATE bias (lower is better)
-    """
     return np.abs(np.mean(ite_pred) - np.mean(ite_true))
 
 
 def policy_value(ite_pred, vfd_observed, treatment_observed):
-    """
-    Mean VFD-28 under model-recommended treatment vs observed.
-
-    Policy value measures: if clinicians had followed the model's
-    recommendations, what would the average VFD-28 have been?
-
-    Computed on the subset of patients where model recommendation
-    matches their actual treatment (observational analogue).
-
-    # Ref: Athey S, Wager S. "Policy Learning with Observational Data."
-    #      Econometrica 2021 — framework for policy evaluation from
-    #      observational data. Section 3.
-
-    Args:
-        ite_pred: (N,) — predicted ITE (positive = NIRS better)
-        vfd_observed: (N,) — observed VFD-28
-        treatment_observed: (N,) — 0=IMV, 1=NIRS
-    Returns:
-        dict with policy evaluation results
-    """
     recommended = (ite_pred > 0).astype(int)
 
     concordant = (recommended == treatment_observed)
@@ -81,41 +35,11 @@ def policy_value(ite_pred, vfd_observed, treatment_observed):
 
 
 def survival_calibration(p_survive_pred, delta):
-    """
-    Brier score for survival probability calibration.
-
-    # Ref: Brier GW. "Verification of forecasts expressed in terms
-    #      of probability." Monthly Weather Review 1950.
-    # Ref: graphspa results/05_Ablation_statistical_analysis.ipynb:
-    #      uses multiple calibration metrics for model comparison.
-
-    Args:
-        p_survive_pred: (N,) — predicted P(survive to day 28)
-        delta: (N,) — 1=survived, 0=died
-    Returns:
-        float — Brier score (lower is better)
-    """
     return brier_score_loss(delta, p_survive_pred)
 
 
 def c_for_benefit(ite_pred, vfd_observed, treatment_observed,
                   n_pairs=10000, random_state=42):
-    """
-    Concordance statistic for benefit (C-for-benefit).
-
-    For random pairs of patients from opposite treatment arms,
-    checks whether the predicted ITE correctly orders the observed
-    treatment benefit.
-
-    Args:
-        ite_pred: (N,) — predicted ITE (positive = NIRS better)
-        vfd_observed: (N,) — observed VFD-28
-        treatment_observed: (N,) — 0=IMV, 1=NIRS
-        n_pairs: number of random cross-arm pairs to evaluate
-        random_state: random seed
-    Returns:
-        dict with c_for_benefit and details
-    """
     rng = np.random.RandomState(random_state)
 
     nirs_idx = np.where(treatment_observed == 1)[0]
@@ -160,18 +84,6 @@ def c_for_benefit(ite_pred, vfd_observed, treatment_observed,
 
 def compute_all_metrics(pred_outputs, vfd_observed, delta, treatment_observed,
                         ite_true=None):
-    """
-    Compute all evaluation metrics.
-
-    Args:
-        pred_outputs: Dict from ITEPredictor
-        vfd_observed: (N,) — observed VFD-28
-        delta: (N,) — 1=survived, 0=died
-        treatment_observed: (N,) — 0=IMV, 1=NIRS
-        ite_true: (N,) — true ITE (optional, for semi-synthetic)
-    Returns:
-        dict with all metrics
-    """
     ite_pred = pred_outputs['ite'].squeeze()
     p_surv_obs = np.where(
         treatment_observed == 1,
@@ -221,26 +133,6 @@ def compute_all_metrics(pred_outputs, vfd_observed, delta, treatment_observed,
 
 
 def compute_e_value(risk_ratio):
-    """
-    Compute E-value for an observed risk ratio.
-
-    The E-value is the minimum strength of association (on the risk ratio
-    scale) that an unmeasured confounder would need to have with BOTH
-    treatment and outcome to explain away the observed effect.
-
-    # Ref: VanderWeele TJ, Ding P. "Sensitivity analysis in observational
-    #      research: introducing the E-value." Annals of Internal Medicine
-    #      2017; 167(4):268-274. Eq. (1): E-value = RR + sqrt(RR*(RR-1))
-    #      for RR >= 1. Section "Definition and Calculation".
-    #
-    # Ref: Ding P, VanderWeele TJ. "Sensitivity analysis without assumptions."
-    #      Epidemiology 2016. Provides the underlying sensitivity formula.
-
-    Args:
-        risk_ratio: float — observed risk ratio (must be >= 1; if < 1, invert)
-    Returns:
-        float — E-value (larger = more robust to unmeasured confounding)
-    """
     if risk_ratio < 1:
         risk_ratio = 1.0 / risk_ratio
     if risk_ratio <= 1.0:
@@ -249,27 +141,6 @@ def compute_e_value(risk_ratio):
 
 
 def compute_e_value_for_ate(ate, outcome_std, treatment_prevalence=0.5):
-    """
-    Approximate E-value for an ATE estimate using standardized effect size.
-
-    Converts ATE to approximate risk ratio using the method from
-    VanderWeele & Ding (2017), then computes E-value.
-
-    # Ref: VanderWeele & Ding, Annals of Internal Medicine 2017, Section
-    #      "E-values for Difference Measures": convert standardized mean
-    #      difference to approximate RR via d = log(RR) * sqrt(3) / pi.
-    #
-    # Ref: Hasegawa et al. "How to handle unmeasured confounding in
-    #      clinical studies." J Clin Epidemiol 2022. Section 3: E-value
-    #      computation for continuous outcomes.
-
-    Args:
-        ate: float — average treatment effect (in outcome units, e.g., VFD days)
-        outcome_std: float — standard deviation of the outcome
-        treatment_prevalence: float — P(treated) in the sample
-    Returns:
-        dict with E-value analysis results
-    """
     d = ate / max(outcome_std, 1e-6)
 
     log_rr = d * np.pi / np.sqrt(3)
@@ -291,29 +162,6 @@ def compute_e_value_for_ate(ate, outcome_std, treatment_prevalence=0.5):
 
 def rosenbaum_sensitivity_bounds(ite_pred, treatment, vfd_observed,
                                   gamma_values=None):
-    """
-    Rosenbaum sensitivity analysis bounds for the treatment effect.
-
-    Assesses how sensitive the observed treatment effect is to a
-    hypothetical unmeasured confounder of strength Gamma.
-
-    # Ref: Rosenbaum PR. "Observational Studies." 2nd ed. Springer 2002.
-    #      Chapter 4: "Sensitivity to Hidden Bias." Eq. (4.3.2):
-    #      Under hidden bias of strength Gamma, the treatment odds ratio
-    #      for matched pairs changes by factor Gamma.
-    #
-    # Ref: Rosenbaum PR. "Sensitivity Analysis in Observational Studies."
-    #      Encyclopedia of Statistics in Behavioral Science 2005.
-    #      Provides simplified framework used here.
-
-    Args:
-        ite_pred: (N,) — predicted ITE
-        treatment: (N,) — 0=IMV, 1=NIRS
-        vfd_observed: (N,) — observed VFD-28
-        gamma_values: list of Gamma values to test (default: [1, 1.5, 2, 2.5, 3])
-    Returns:
-        dict — sensitivity analysis results at each Gamma
-    """
     if gamma_values is None:
         gamma_values = [1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0]
 
@@ -356,19 +204,6 @@ def rosenbaum_sensitivity_bounds(ite_pred, treatment, vfd_observed,
 
 def plot_model_comparison_bars(results_dict, metric_key, metric_label,
                                save_path=None):
-    """
-    Bar chart comparing models — matches graphspa Fig 2 style.
-
-    # Ref: graphspa results/01_Fig2a_plot_hirid.ipynb:
-    #      compares GRU, LSTM, TCN, TF, GNN_b0, GNN_dae with
-    #      mean ± std over 10 runs, grouped by metric.
-
-    Args:
-        results_dict: {model_name: {'mean': float, 'std': float}}
-        metric_key: Which metric to plot
-        metric_label: Human-readable label for y-axis
-        save_path: Optional path to save figure
-    """
     import matplotlib.pyplot as plt
 
     models = list(results_dict.keys())
@@ -397,17 +232,6 @@ def plot_model_comparison_bars(results_dict, metric_key, metric_label,
 
 
 def plot_ite_distribution(ite_pred, model_name='VT-NIRS', save_path=None):
-    """
-    ITE distribution histogram with kernel density — matches AMIA style.
-
-    # Ref: DT_ITE_Final.ipynb line 2065: sns.histplot(ite_rf, bins=50, kde=True)
-    #      with mean vertical line annotation.
-
-    Args:
-        ite_pred: (N,) — predicted ITE values
-        model_name: Label for the model
-        save_path: Optional save path
-    """
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -446,18 +270,6 @@ def plot_ite_distribution(ite_pred, model_name='VT-NIRS', save_path=None):
 
 
 def plot_training_curves(train_log, save_path=None):
-    """
-    Training loss curves over epochs — matches graphspa training notebook style.
-
-    # Ref: graphspa training/01a_HiRID_baseline.ipynb: tracks loss, AUROC,
-    #      AUPRC, F1, MCC per epoch with train/val split.
-    # Ref: mcem uses PyTorch Lightning with built-in logging.
-
-    Args:
-        train_log: Dict with keys like 'epoch', 'l_total_G', 'l_surv', etc.
-                   Each value is a list of floats (one per epoch).
-        save_path: Optional save path
-    """
     import matplotlib.pyplot as plt
 
     epochs = train_log['epoch']
@@ -488,19 +300,6 @@ def plot_training_curves(train_log, save_path=None):
 
 
 def plot_decomposed_ite_scatter(pred_outputs, save_path=None):
-    """
-    Scatter plot: survival ITE vs conditional VFD ITE.
-
-    This visualization is UNIQUE to our survival decomposition approach
-    and shows the clinical mechanism behind treatment effect heterogeneity.
-
-    No direct analogue in baseline articles — this is a novel visualization
-    enabled by our two-headed architecture.
-
-    Args:
-        pred_outputs: Dict from ITEPredictor with 'ite_survival', 'ite_vfd_cond'
-        save_path: Optional save path
-    """
     import matplotlib.pyplot as plt
 
     ite_surv = pred_outputs['ite_survival'].squeeze()
@@ -539,21 +338,6 @@ def plot_decomposed_ite_scatter(pred_outputs, save_path=None):
 
 def plot_subgroup_ite_trends(ite_pred, covariate_values, covariate_name,
                               n_bins=5, save_path=None):
-    """
-    ITE trend across covariate bins — shows treatment effect heterogeneity.
-
-    # Ref: graphspa results/07_Fig05a_HiRID.ipynb: co-occurrence analysis
-    #      showing feature interaction trends.
-    # Ref: This type of subgroup trend plot is standard in ITE literature:
-    #      Künzel et al. PNAS 2019 (our [16]) — Fig. 3 shows CATE by subgroup.
-
-    Args:
-        ite_pred: (N,) — predicted ITE
-        covariate_values: (N,) — values of the covariate to stratify by
-        covariate_name: str — name for x-axis label
-        n_bins: Number of quantile bins
-        save_path: Optional save path
-    """
     import matplotlib.pyplot as plt
 
     bin_edges = np.percentile(covariate_values, np.linspace(0, 100, n_bins + 1))
